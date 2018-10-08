@@ -1,5 +1,5 @@
 defmodule Exeration.Operation.Authorize do
-  defmodule InvalidAuthorize do
+  defmodule Invalid do
     defexception message: "Authorize is not in valid format"
   end
 
@@ -34,6 +34,6 @@ defmodule Exeration.Operation.Authorize do
   end
 
   def cast(_) do
-    raise InvalidAuthorize
+    raise Invalid
   end
 end

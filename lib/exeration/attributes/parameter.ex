@@ -1,5 +1,5 @@
 defmodule Exeration.Operation.Parameter do
-  defmodule InvalidParameter do
+  defmodule Invalid do
     defexception message: "Parameter is not in valid format"
   end
 
@@ -61,7 +61,7 @@ defmodule Exeration.Operation.Parameter do
 
   def cast(%{argument: argument, type: :struct})
       when is_atom(argument) do
-    raise InvalidParameter, message: "Type `:struct` require struct argument with module as value"
+    raise Invalid, message: "Type `:struct` require struct argument with module as value"
   end
 
   def cast(%{argument: argument, type: type, required: required})
@@ -74,13 +74,13 @@ defmodule Exeration.Operation.Parameter do
     %Parameter{argument: argument, type: type, required: false}
   end
 
-  def cast(%{type: type}) when type not in @allowed_types do
-    raise InvalidParameter,
+  def cast(%{type: type}) when type not in allowed_types() do
+    raise Invalid,
       message:
-        "Type `#{type}` in not allowed type, allowed types: #{Enum.join(@allowed_types, ", ")}"
+        "Type `#{type}` in not allowed type, allowed types: #{Enum.join(allowed_types(), ", ")}"
   end
 
   def cast(_) do
-    raise InvalidParameter
+    raise Invalid
   end
 end
