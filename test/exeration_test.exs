@@ -22,6 +22,9 @@ defmodule ExerationTest do
     @authorize policy: &ExerationTest.Example.auth?/0
     def list(), do: ["a", "b"]
 
+    @parameter argument: :string, type: :test
+    def validator(string), do: string
+
     def auth?(file) do
       file.is_folder
     end
@@ -31,12 +34,23 @@ defmodule ExerationTest do
     end
   end
 
+  defmodule Validator do
+    @behaviour Exeration.Validator
+
+    def check(_parameter, value) do
+      case String.length(value) do
+        1 -> :ok
+        _ -> :error
+      end
+    end
+  end
+
   test "test non nil" do
     assert {:ok, {"main", "test.txt"}} == ExerationTest.Example.test("main", "test.txt")
   end
 
   test "test nil" do
-    assert {:error, :required_argument, :file} == ExerationTest.Example.test("main", nil)
+    assert {:error, :file, :string} == ExerationTest.Example.test("main", nil)
   end
 
   test "get authenticated" do
@@ -50,11 +64,19 @@ defmodule ExerationTest do
   end
 
   test "get non struct" do
-    assert {:error, :invalid_argument, :file} ==
+    assert {:error, :file, :struct} ==
              ExerationTest.Example.get(%{name: "text.txt", is_folder: true})
   end
 
   test "list authenticated" do
     assert {:ok, ["a", "b"]} == ExerationTest.Example.list()
+  end
+
+  test "custom validator positive" do
+    assert {:ok, "a"} == ExerationTest.Example.validator("a")
+  end
+
+  test "custom validator negative" do
+    assert {:error, :string, :test} == ExerationTest.Example.validator("ab")
   end
 end
