@@ -6,8 +6,8 @@ defmodule Exeration.Authorization do
     arguments = Enum.map(arguments, &Keyword.get(args, &1))
 
     case Kernel.apply(policy, arguments) do
-      true -> {:authorize, true}
-      false -> {:authorize, false}
+      true -> {:ok, :authorize}
+      false -> {:error, :authorize}
     end
   end
 
@@ -15,10 +15,10 @@ defmodule Exeration.Authorization do
     arguments = Keyword.values(args)
 
     case Kernel.apply(policy, arguments) do
-      true -> {:authorize, true}
-      false -> {:authorize, false}
+      true -> {:ok, :authorize}
+      false -> {:error, :authorize}
     end
   end
 
-  def check(_, _), do: {:authorize, true}
+  def check(_, _), do: {:ok, :authorize}
 end

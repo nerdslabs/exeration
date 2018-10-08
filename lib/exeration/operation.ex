@@ -100,13 +100,12 @@ defmodule Exeration.Operation do
       def unquote(name)(unquote_splicing(args_quote)) when unquote(guard) do
         arguments = Enum.zip(unquote(args), [unquote_splicing(args_quote)])
 
-        with {:validate, true} <- Exeration.Validation.check(unquote(parameters), arguments),
-            {:authorize, true} <- Exeration.Authorization.check(unquote(authorize), arguments) do
+        with {:ok, :validation} <- Exeration.Validation.check(unquote(parameters), arguments),
+            {:ok, :authorize} <- Exeration.Authorization.check(unquote(authorize), arguments) do
           {:ok, unquote(body)}
         else
-          {:validate, false, :type, parameter} -> {:error, :invalid_argument, parameter.argument}
-          {:validate, false, :required, parameter} -> {:error, :required_argument, parameter.argument}
-          {:authorize, false} -> {:error, :not_authorized}
+          {:error, argument, type} -> {:error, argument, type}
+          {:error, :authorize} -> {:error, :not_authorized}
         end
       end
     end
