@@ -99,7 +99,21 @@ defmodule Exeration.Validation do
   end
 
   defp check_type(%Parameter{type: :dont_check}, _) do
-    {:type, true}
+    :ok
+  end
+
+  defp check_type(%Parameter{type: custom} = parameter, value) do
+    Application.fetch_env!(:exeration, :custom_validators)
+    |> Keyword.get(custom, nil)
+    |> case do
+      nil -> raise Exeration.Validator.Error, message: "Custom validator '#{custom}' not presented in config"
+      module -> Kernel.apply(module, :check, [parameter, value])
+    end
+    |> case do
+      :ok -> :ok
+      :error -> :error
+      _ -> raise Exeration.Validator.Error, message: "Custom validator '#{custom}' should return ':ok' or ':error'"
+    end
   end
 
   defp is_struct(%{__struct__: _} = item) when is_map(item), do: true
