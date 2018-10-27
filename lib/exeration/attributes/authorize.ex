@@ -1,4 +1,10 @@
 defmodule Exeration.Operation.Authorize do
+  @moduledoc """
+  Attribute `@authorize` check following operation with specified policy function, which must return `boolean`.
+
+  More info about usage you can find [here](https://google.com).
+  """
+
   defmodule Invalid do
     defexception message: "Authorize is not in valid format"
   end
