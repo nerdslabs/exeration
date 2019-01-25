@@ -27,9 +27,10 @@ defmodule Exeration.Operation do
   defmacro __before_compile__(env) do
     methods = Module.get_attribute(env.module, :methods)
 
-    quote @anno do
-      for method <- unquote(methods) do
-        Module.eval_quoted(unquote(env.module), method)
+    for {name, arity, function_quote} <- methods do
+      quote @anno do
+        defoverridable Keyword.new([{unquote(name), unquote(arity)}])
+        Module.eval_quoted(unquote(env.module), unquote(function_quote))
       end
     end
   end
@@ -59,12 +60,10 @@ defmodule Exeration.Operation do
 
     check_parameters_arguments(env.module, name, length(args), args, parameters)
 
-    :elixir_def.take_definition(env.module, {name, length(args_quote)})
-
     operation =
-      create_quote(:authorize, name, args, args_quote, guards, body, parameters, authorize)
+      create_quote(name, args, args_quote, guards, body, parameters, authorize)
 
-    Module.put_attribute(env.module, :methods, operation)
+    Module.put_attribute(env.module, :methods, {name, length(args), operation})
   end
 
   defp check_parameters_arguments(module, name, arity, arguments, parameters) do
@@ -91,7 +90,7 @@ defmodule Exeration.Operation do
     end)
   end
 
-  defp create_quote(:authorize, name, args, args_quote, guards, body, parameters, authorize) do
+  defp create_quote(name, args, args_quote, guards, body, parameters, authorize) do
     guard = get_guard(guards)
     parameters = Macro.escape(parameters)
     authorize = Macro.escape(authorize)
@@ -109,6 +108,7 @@ defmodule Exeration.Operation do
         end
       end
     end
+    |> Macro.escape
   end
 
   defp get_guard([guard | _]), do: guard
