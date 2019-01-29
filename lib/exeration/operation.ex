@@ -108,7 +108,6 @@ defmodule Exeration.Operation do
         end
       end
     end
-    |> Macro.escape
   end
 
   defp get_guard([guard | _]), do: guard
