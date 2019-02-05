@@ -28,70 +28,70 @@ defmodule Exeration.Validation do
   end
 
   defp check_type(%Parameter{type: :boolean}, value) do
-    case is_boolean(value) do
+    case is_boolean(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :integer}, value) do
-    case is_integer(value) do
+    case is_integer(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :float}, value) do
-    case is_float(value) do
+    case is_float(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :string}, value) do
-    case is_binary(value) do
+    case is_binary(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :tuple}, value) do
-    case is_tuple(value) do
+    case is_tuple(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :map}, value) do
-    case is_map(value) do
+    case is_map(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :struct} = parameter, value) do
-    case is_map(value) && is_struct(value) && value.__struct__ == parameter.struct do
+    case (is_map(value) and is_struct(value) and value.__struct__ == parameter.struct) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :list}, value) do
-    case is_list(value) do
+    case is_list(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :atom}, value) do
-    case is_atom(value) do
+    case is_atom(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
   defp check_type(%Parameter{type: :function}, value) do
-    case is_function(value) do
+    case is_function(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
