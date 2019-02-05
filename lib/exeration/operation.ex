@@ -27,12 +27,21 @@ defmodule Exeration.Operation do
   defmacro __before_compile__(env) do
     methods = Module.get_attribute(env.module, :methods)
 
-    for {name, arity, function_quote} <- methods do
+    overridables = for {name, arity, _function_quote} <- methods do
       quote @anno do
-        defoverridable Keyword.new([{unquote(name), unquote(arity)}])
+        if Module.overridable?(unquote(env.module), {unquote(name), unquote(arity)}) == false do
+          defoverridable Keyword.new([{unquote(name), unquote(arity)}])
+        end
+      end
+    end
+
+    functions = for {_name, _arity, function_quote} <- methods do
+      quote @anno do
         Module.eval_quoted(unquote(env.module), unquote(function_quote))
       end
     end
+
+    Enum.concat(overridables, functions)
   end
 
   alias Exeration.Operation.Parameter
@@ -56,14 +65,18 @@ defmodule Exeration.Operation do
   defp bind_operation(_, _, _, _, _, _, [], nil), do: :not_operation
 
   defp bind_operation(env, _kind, name, args_quote, guards, [do: body], parameters, authorize) do
-    args = Enum.map(args_quote, &elem(&1, 0))
+    args = Enum.reduce(args_quote, [], fn
+      ({:=, _, [_ | [{argument, _, _} | _]]}, acc) -> [argument | acc]
+      ({argument, _, _}, acc) -> [argument | acc]
+      (_, acc) -> [:_filled | acc]
+    end) |> Enum.reverse
 
-    check_parameters_arguments(env.module, name, length(args), args, parameters)
+    check_parameters_arguments(env.module, name, length(args_quote), args, parameters)
 
     operation =
       create_quote(name, args, args_quote, guards, body, parameters, authorize)
 
-    Module.put_attribute(env.module, :methods, {name, length(args), operation})
+    Module.put_attribute(env.module, :methods, {name, length(args_quote), operation})
   end
 
   defp check_parameters_arguments(module, name, arity, arguments, parameters) do
@@ -79,14 +92,16 @@ defmodule Exeration.Operation do
       end
     end)
 
-    Enum.each(arguments, fn argument ->
-      unless Enum.member?(parameters, argument) do
-        raise MissingParameter,
-          message:
-            "Argument '#{argument}' don't have parameter description in function '#{module}.#{
-              name
-            }/#{arity}'"
-      end
+    Enum.each(arguments, fn
+      :_filled -> :_filled
+      argument ->
+        unless Enum.member?(parameters, argument) do
+          raise MissingParameter,
+            message:
+              "Argument '#{argument}' don't have parameter description in function '#{module}.#{
+                name
+              }/#{arity}'"
+        end
     end)
   end
 
