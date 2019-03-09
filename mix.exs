@@ -17,6 +17,7 @@ defmodule Exeration.MixProject do
 
   def application do
     [
+      mod: {Exeration, []},
       extra_applications: [:logger]
     ]
   end
@@ -45,14 +46,14 @@ defmodule Exeration.MixProject do
     [
       Validators: [
         Exeration.Validation,
-        Exeration.Authorization,
+        Exeration.Authorization
       ],
       Attributes: [
         Exeration.Operation.Parameter,
-        Exeration.Operation.Authorize,
+        Exeration.Operation.Authorize
       ],
       Behaviours: [
-        Exeration.Validator,
+        Exeration.Validator
       ]
     ]
   end
@@ -63,8 +64,8 @@ defmodule Exeration.MixProject do
 
   defp groups_for_extras do
     [
-      "Introduction": ~r/guides\/overview\/.?/,
-      "Attributes": ~r/guides\/attributes\/[^\/]+\.md/,
+      Introduction: ~r/guides\/overview\/.?/,
+      Attributes: ~r/guides\/attributes\/[^\/]+\.md/
     ]
   end
 end

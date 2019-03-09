@@ -5,7 +5,7 @@ defmodule Exeration.Validation do
     value = Keyword.get(arguments, parameter.argument)
 
     with :ok <- check_required(parameter, value),
-        :ok <- check_type(parameter, value) do
+         :ok <- check_type(parameter, value) do
       check(parameters, arguments)
     else
       :error -> {:error, argument, type}
@@ -70,7 +70,8 @@ defmodule Exeration.Validation do
   end
 
   defp check_type(%Parameter{type: :struct} = parameter, value) do
-    case (is_map(value) and is_struct(value) and value.__struct__ == parameter.struct) or is_nil(value) do
+    case (is_map(value) and is_struct(value) and value.__struct__ == parameter.struct) or
+           is_nil(value) do
       true -> :ok
       false -> :error
     end
@@ -105,13 +106,23 @@ defmodule Exeration.Validation do
     Application.fetch_env!(:exeration, :custom_validators)
     |> Keyword.get(custom, nil)
     |> case do
-      nil -> raise Exeration.Validator.Error, message: "Custom validator '#{custom}' not presented in config"
-      module -> Kernel.apply(module, :check, [parameter, value])
+      nil ->
+        raise Exeration.Validator.Error,
+          message: "Custom validator '#{custom}' not presented in config"
+
+      module ->
+        Kernel.apply(module, :check, [parameter, value])
     end
     |> case do
-      :ok -> :ok
-      :error -> :error
-      _ -> raise Exeration.Validator.Error, message: "Custom validator '#{custom}' should return ':ok' or ':error'"
+      :ok ->
+        :ok
+
+      :error ->
+        :error
+
+      _ ->
+        raise Exeration.Validator.Error,
+          message: "Custom validator '#{custom}' should return ':ok' or ':error'"
     end
   end
 

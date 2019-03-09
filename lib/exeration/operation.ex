@@ -7,11 +7,14 @@ defmodule Exeration.Operation do
     defexception message: "Argument don't have parameter description"
   end
 
-  defmacro __using__(_options) do
+  defmacro __using__(options) do
     quote do
+      Module.put_attribute(__MODULE__, :observers, Keyword.get(unquote(options), :observers, []))
+
       Module.register_attribute(__MODULE__, :authorize, accumulate: false, persist: false)
       Module.register_attribute(__MODULE__, :parameter, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :methods, accumulate: true, persist: false)
+      Module.register_attribute(__MODULE__, :observe, accumulate: false, persist: false)
 
       @on_definition unquote(__MODULE__)
       @before_compile unquote(__MODULE__)
@@ -46,6 +49,8 @@ defmodule Exeration.Operation do
 
   alias Exeration.Operation.Parameter
   alias Exeration.Operation.Authorize
+  alias Exeration.Observer.Supervisor
+  alias Exeration.Observer
 
   def __on_definition__(env, kind, name, args, guards, body) do
     parameters =
@@ -56,15 +61,19 @@ defmodule Exeration.Operation do
       Module.get_attribute(env.module, :authorize)
       |> Authorize.cast()
 
-    bind_operation(env, kind, name, args, guards, body, parameters, authorize)
+    observers = Module.get_attribute(env.module, :observe)
+      |> Observer.cast()
+
+    bind_operation(env, kind, name, args, guards, body, parameters, authorize, observers)
 
     Module.delete_attribute(env.module, :parameter)
     Module.delete_attribute(env.module, :authorize)
+    Module.delete_attribute(env.module, :observe)
   end
 
-  defp bind_operation(_, _, _, _, _, _, [], nil), do: :not_operation
+  defp bind_operation(_, _, _, _, _, _, [], nil, _), do: :not_operation
 
-  defp bind_operation(env, _kind, name, args_quote, guards, [do: body], parameters, authorize) do
+  defp bind_operation(env, _kind, name, args_quote, guards, [do: body], parameters, authorize, observers) do
     args = Enum.reduce(args_quote, [], fn
       ({:=, _, [_ | [{argument, _, _} | _]]}, acc) -> [argument | acc]
       ({argument, _, _}, acc) -> [argument | acc]
@@ -74,7 +83,7 @@ defmodule Exeration.Operation do
     check_parameters_arguments(env.module, name, length(args_quote), args, parameters)
 
     operation =
-      create_quote(name, args, args_quote, guards, body, parameters, authorize)
+      create_quote(env.module, name, args, args_quote, guards, body, parameters, authorize, observers)
 
     Module.put_attribute(env.module, :methods, {name, length(args_quote), operation})
   end
@@ -105,22 +114,27 @@ defmodule Exeration.Operation do
     end)
   end
 
-  defp create_quote(name, args, args_quote, guards, body, parameters, authorize) do
+  defp create_quote(module, name, args, args_quote, guards, body, parameters, authorize, observers) do
     guard = get_guard(guards)
     parameters = Macro.escape(parameters)
     authorize = Macro.escape(authorize)
+    # observe_modules = Module.get_attribute(module, :observers, [])
 
     quote @anno do
       def unquote(name)(unquote_splicing(args_quote)) when unquote(guard) do
         arguments = Enum.zip(unquote(args), [unquote_splicing(args_quote)])
 
-        with {:ok, :validation} <- Exeration.Validation.check(unquote(parameters), arguments),
+        result = with {:ok, :validation} <- Exeration.Validation.check(unquote(parameters), arguments),
             {:ok, :authorize} <- Exeration.Authorization.check(unquote(authorize), arguments) do
           {:ok, unquote(body)}
         else
           {:error, argument, type} -> {:error, argument, type}
           {:error, :authorize} -> {:error, :not_authorized}
         end
+
+        Supervisor.notify_observers(unquote(observers), unquote(name), unquote(length(args)), result)
+
+        result
       end
     end
   end

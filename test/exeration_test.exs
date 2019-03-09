@@ -3,7 +3,7 @@ defmodule ExerationTest do
   doctest Exeration
 
   defmodule Example do
-    use Exeration.Operation
+    use Exeration.Operation, observers: [ExerationTest.Observer]
 
     defmodule Struct do
       defstruct [:name, :is_folder]
@@ -25,6 +25,10 @@ defmodule ExerationTest do
     @parameter argument: :string, type: :test
     def validator(string), do: string
 
+    @parameter argument: :atom, type: :atom
+    @observe modules: ExerationTest.Observer
+    def observe(atom), do: atom
+
     def auth?(file) do
       file.is_folder
     end
@@ -42,6 +46,13 @@ defmodule ExerationTest do
         1 -> :ok
         _ -> :error
       end
+    end
+  end
+
+  defmodule Observer do
+    use Exeration.Observer
+
+    def handle({_name, _arity}, _result) do
     end
   end
 
@@ -78,5 +89,13 @@ defmodule ExerationTest do
 
   test "custom validator negative" do
     assert {:error, :string, :test} == ExerationTest.Example.validator("ab")
+  end
+
+  test "observer" do
+    ExerationTest.Example.observe(:observe)
+
+    pid = GenServer.whereis(ExerationTest.Observer)
+
+    assert {:ok, :observe} == :sys.get_state(pid)
   end
 end

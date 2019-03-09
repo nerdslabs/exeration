@@ -31,7 +31,7 @@ defmodule Exeration.Operation.Parameter do
 
   defmacrop allowed_types do
     Application.get_env(:exeration, :custom_validators, [])
-    |> Keyword.keys
+    |> Keyword.keys()
     |> Enum.concat(@allowed_types)
   end
 
@@ -83,7 +83,9 @@ defmodule Exeration.Operation.Parameter do
   def cast(%{type: type}) when type not in allowed_types() do
     raise Invalid,
       message:
-        "Type `#{type}` in not allowed type or not registred custom type, allowed types: #{Enum.join(allowed_types(), ", ")}"
+        "Type `#{type}` in not allowed type or not registred custom type, allowed types: #{
+          Enum.join(allowed_types(), ", ")
+        }"
   end
 
   def cast(_) do
