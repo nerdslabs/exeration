@@ -21,15 +21,24 @@ defmodule Example do
   use Exeration.Operation
 
   @parameter argument: :id, type: :integer
-  def get_user(id), do: file
+  def get_user(id) do
+    # Some logic
+    {:ok, user}
+  end
 
   @authorize policy: &Example.auth?/0
-  def list_users(), do: ["a", "b"]
+  def list_users() do
+    # Some logic
+    {:ok, ["a", "b"]}
+  end
 
   @parameter argument: :user, type: :struct, struct: Example.User
   @parameter argument: :id, type: :integer
   @authorize policy: &Example.auth?/2
-  def delete_user(user, id), do: ["a", "b"]
+  def delete_user(user, id) do
+    # Some logic
+    {:ok, ["a", "b"]}
+  end
 
   def auth?() do
     true

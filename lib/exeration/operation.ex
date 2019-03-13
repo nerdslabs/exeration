@@ -114,11 +114,10 @@ defmodule Exeration.Operation do
     end)
   end
 
-  defp create_quote(module, name, args, args_quote, guards, body, parameters, authorize, observers) do
+  defp create_quote(_module, name, args, args_quote, guards, body, parameters, authorize, observers) do
     guard = get_guard(guards)
     parameters = Macro.escape(parameters)
     authorize = Macro.escape(authorize)
-    # observe_modules = Module.get_attribute(module, :observers, [])
 
     quote @anno do
       def unquote(name)(unquote_splicing(args_quote)) when unquote(guard) do
@@ -126,7 +125,7 @@ defmodule Exeration.Operation do
 
         result = with {:ok, :validation} <- Exeration.Validation.check(unquote(parameters), arguments),
             {:ok, :authorize} <- Exeration.Authorization.check(unquote(authorize), arguments) do
-          {:ok, unquote(body)}
+          unquote(body)
         else
           {:error, argument, type} -> {:error, argument, type}
           {:error, :authorize} -> {:error, :not_authorized}

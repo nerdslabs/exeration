@@ -11,6 +11,7 @@ use Exeration.Operation
 @parameter argument: :id, type: :integer
 def get_image(id) do
   # Some logic
+  {:ok, result}
 end
 ```
 

@@ -12,22 +12,22 @@ defmodule ExerationTest do
     @parameter argument: :user, type: :string
     @parameter argument: :file, type: :string, required: true
     def test(user, file) when is_binary(user) do
-      {user, file}
+      {:ok, {user, file}}
     end
 
     @parameter argument: :file, type: :struct, struct: Struct
     @authorize policy: &ExerationTest.Example.auth?/1, arguments: [:file]
-    def get(file), do: file
+    def get(file), do: {:ok, file}
 
     @authorize policy: &ExerationTest.Example.auth?/0
-    def list(), do: ["a", "b"]
+    def list(), do: {:ok, ["a", "b"]}
 
     @parameter argument: :string, type: :test
-    def validator(string), do: string
+    def validator(string), do: {:ok, string}
 
     @parameter argument: :atom, type: :atom
     @observe modules: ExerationTest.Observer
-    def observe(atom), do: atom
+    def observe(atom), do: {:ok, atom}
 
     def auth?(file) do
       file.is_folder
