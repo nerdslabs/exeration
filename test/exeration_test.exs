@@ -9,23 +9,26 @@ defmodule ExerationTest do
       defstruct [:name, :is_folder]
     end
 
-    @parameter argument: :user, type: :string
-    @parameter argument: :file, type: :string, required: true
+    @argument name: :user, type: :string
+    @argument name: :file, type: :string, required: true
     def test(user, file) when is_binary(user) do
       {:ok, {user, file}}
     end
 
-    @parameter argument: :file, type: :struct, struct: Struct
+    @argument name: :file, type: :struct, struct: Struct
     @authorize policy: &ExerationTest.Example.auth?/1, arguments: [:file]
     def get(file), do: {:ok, file}
+
+    @argument name: :default, type: :string
+    def default(default \\ "abc"), do: {:ok, default}
 
     @authorize policy: &ExerationTest.Example.auth?/0
     def list(), do: {:ok, ["a", "b"]}
 
-    @parameter argument: :string, type: :test
+    @argument name: :string, type: :test
     def validator(string), do: {:ok, string}
 
-    @parameter argument: :atom, type: :atom
+    @argument name: :atom, type: :atom
     @observe modules: ExerationTest.Observer
     def observe(atom), do: {:ok, atom}
 
@@ -41,7 +44,7 @@ defmodule ExerationTest do
   defmodule Validator do
     @behaviour Exeration.Validator
 
-    def check(_parameter, value) do
+    def check(_argument, value) do
       case String.length(value) do
         1 -> :ok
         _ -> :error
@@ -77,6 +80,10 @@ defmodule ExerationTest do
   test "get non struct" do
     assert {:error, :file, :struct} ==
              ExerationTest.Example.get(%{name: "text.txt", is_folder: true})
+  end
+
+  test "test detault" do
+    assert {:ok, "abc"} == ExerationTest.Example.default()
   end
 
   test "list authenticated" do

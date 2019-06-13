@@ -1,8 +1,8 @@
-# Parameter
+# Argument
 
 ## Basic usage
 ```elixir
-@parameter argument: :id, type: :integer
+@argument name: :id, type: :integer
 def get(id) do
   # Some logic
   {:ok, result}
@@ -14,11 +14,11 @@ List of validators built into the library `[:boolean, :integer, :float, :string,
 if you want to add own validator you can do it, check more info here.
 
 ## Options
-List of options that you can pass to `@parameter`.
+List of options that you can pass to `@argument`.
 
 ### Struct
 ```elixir
-@parameter argument: :user, type: :struct, struct: Example.User
+@argument name: :user, type: :struct, struct: Example.User
 def get(user) do
   # Some logic
   {:ok, result}
@@ -33,6 +33,6 @@ end
 ```
 **Error**
 ```elixir
-{:error, parameter, required_type} = Example.get(user)
+{:error, argument, required_type} = Example.get(user)
 {:error, :file_id, :integer} = Example.get(user)
 ```

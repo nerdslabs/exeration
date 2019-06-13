@@ -49,7 +49,7 @@ defmodule Exeration.MixProject do
         Exeration.Authorization
       ],
       Attributes: [
-        Exeration.Operation.Parameter,
+        Exeration.Operation.Argument,
         Exeration.Operation.Authorize
       ],
       Behaviours: [
@@ -59,7 +59,7 @@ defmodule Exeration.MixProject do
   end
 
   defp extras do
-    ["guides/overview.md", "guides/attributes/authorize.md", "guides/attributes/parameter.md"]
+    ["guides/overview.md", "guides/attributes/authorize.md", "guides/attributes/argument.md"]
   end
 
   defp groups_for_extras do

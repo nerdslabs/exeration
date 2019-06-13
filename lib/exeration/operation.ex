@@ -1,10 +1,10 @@
 defmodule Exeration.Operation do
   defmodule MissingArgument do
-    defexception message: "Parameter not exists as argument in function"
+    defexception message: "Argument not exists in function"
   end
 
-  defmodule MissingParameter do
-    defexception message: "Argument don't have parameter description"
+  defmodule MissingDescription do
+    defexception message: "Argument don't have description"
   end
 
   defmacro __using__(options) do
@@ -12,7 +12,7 @@ defmodule Exeration.Operation do
       Module.put_attribute(__MODULE__, :observers, Keyword.get(unquote(options), :observers, []))
 
       Module.register_attribute(__MODULE__, :authorize, accumulate: false, persist: false)
-      Module.register_attribute(__MODULE__, :parameter, accumulate: true, persist: false)
+      Module.register_attribute(__MODULE__, :argument, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :methods, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :observe, accumulate: false, persist: false)
 
@@ -47,15 +47,15 @@ defmodule Exeration.Operation do
     Enum.concat(overridables, functions)
   end
 
-  alias Exeration.Operation.Parameter
+  alias Exeration.Operation.Argument
   alias Exeration.Operation.Authorize
   alias Exeration.Observer.Supervisor
   alias Exeration.Observer
 
-  def __on_definition__(env, kind, name, args, guards, body) do
-    parameters =
-      Module.get_attribute(env.module, :parameter)
-      |> Enum.map(&Parameter.cast/1)
+  def __on_definition__(env, kind, name, args_quote, guards, body) do
+    arguments =
+      Module.get_attribute(env.module, :argument)
+      |> Enum.map(&Argument.cast/1)
 
     authorize =
       Module.get_attribute(env.module, :authorize)
@@ -64,66 +64,69 @@ defmodule Exeration.Operation do
     observers = Module.get_attribute(env.module, :observe)
       |> Observer.cast()
 
-    bind_operation(env, kind, name, args, guards, body, parameters, authorize, observers)
+    bind_operation(env, kind, name, args_quote, guards, body, arguments, authorize, observers)
 
-    Module.delete_attribute(env.module, :parameter)
+    Module.delete_attribute(env.module, :argument)
     Module.delete_attribute(env.module, :authorize)
     Module.delete_attribute(env.module, :observe)
   end
 
   defp bind_operation(_, _, _, _, _, _, [], nil, _), do: :not_operation
 
-  defp bind_operation(env, _kind, name, args_quote, guards, [do: body], parameters, authorize, observers) do
+  defp bind_operation(env, _kind, name, args_quote, guards, [do: body], arguments, authorize, observers) do
     args = Enum.reduce(args_quote, [], fn
       ({:=, _, [_ | [{argument, _, _} | _]]}, acc) -> [argument | acc]
+      ({:\\, _, [{argument, _, _}, _]}, acc) -> [argument | acc]
       ({argument, _, _}, acc) -> [argument | acc]
       (_, acc) -> [:_filled | acc]
     end) |> Enum.reverse
 
-    check_parameters_arguments(env.module, name, length(args_quote), args, parameters)
+    check_arguments_arguments(env.module, name, length(args_quote), args, arguments)
 
     operation =
-      create_quote(env.module, name, args, args_quote, guards, body, parameters, authorize, observers)
+      create_quote(env.module, name, args, args_quote, guards, body, arguments, authorize, observers)
 
     Module.put_attribute(env.module, :methods, {name, length(args_quote), operation})
   end
 
-  defp check_parameters_arguments(module, name, arity, arguments, parameters) do
-    parameters = Enum.map(parameters, &Map.get(&1, :argument))
+  defp check_arguments_arguments(module, name, arity, args, arguments) do
+    arguments = Enum.map(arguments, &Map.get(&1, :name))
 
-    Enum.each(parameters, fn parameter ->
-      unless Enum.member?(arguments, parameter) do
+    Enum.each(arguments, fn argument ->
+      unless Enum.member?(args, argument) do
         raise MissingArgument,
           message:
-            "Parameter '#{parameter}' not exists as argument in function '#{module}.#{name}/#{
+            "Argument '#{argument}' not exists in function '#{module}.#{name}/#{
               arity
             }'"
       end
     end)
 
-    Enum.each(arguments, fn
+    Enum.each(args, fn
       :_filled -> :_filled
       argument ->
-        unless Enum.member?(parameters, argument) do
-          raise MissingParameter,
+        unless Enum.member?(arguments, argument) do
+          raise MissingDescription,
             message:
-              "Argument '#{argument}' don't have parameter description in function '#{module}.#{
+              "Argument '#{argument}' don't have description in function '#{module}.#{
                 name
               }/#{arity}'"
         end
     end)
   end
 
-  defp create_quote(_module, name, args, args_quote, guards, body, parameters, authorize, observers) do
+  defp create_quote(_module, name, args, args_quote, guards, body, arguments, authorize, observers) do
     guard = get_guard(guards)
-    parameters = Macro.escape(parameters)
+    arguments = Macro.escape(arguments)
     authorize = Macro.escape(authorize)
+
+    args_bindings = Enum.map(args, fn arg -> {arg, [], nil} end)
 
     quote @anno do
       def unquote(name)(unquote_splicing(args_quote)) when unquote(guard) do
-        arguments = Enum.zip(unquote(args), [unquote_splicing(args_quote)])
+        arguments = Enum.zip(unquote(args), [unquote_splicing(args_bindings)])
 
-        result = with {:ok, :validation} <- Exeration.Validation.check(unquote(parameters), arguments),
+        result = with {:ok, :validation} <- Exeration.Validation.check(unquote(arguments), arguments),
             {:ok, :authorize} <- Exeration.Authorization.check(unquote(authorize), arguments) do
           unquote(body)
         else

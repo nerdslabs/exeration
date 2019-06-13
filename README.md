@@ -8,7 +8,7 @@ Example usage:
 ```elixir
 use Exeration.Operation
 
-@parameter argument: :id, type: :integer
+@argument name: :id, type: :integer
 def get_image(id) do
   # Some logic
   {:ok, result}

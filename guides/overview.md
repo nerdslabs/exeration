@@ -13,14 +13,14 @@ At first add `:exeration` to `mix.exs` file:
 ## Basic usage
 Add `use Exeration.Operation` to selected module, next use following attributes: 
 
-* `@parameter` ([documentation](https://www.google.com)) 
+* `@argument` ([documentation](https://www.google.com)) 
 * `@authorize` ([documentation](https://www.google.com))
 
 ```elixir
 defmodule Example do
   use Exeration.Operation
 
-  @parameter argument: :id, type: :integer
+  @argument name: :id, type: :integer
   def get_user(id) do
     # Some logic
     {:ok, user}
@@ -32,8 +32,8 @@ defmodule Example do
     {:ok, ["a", "b"]}
   end
 
-  @parameter argument: :user, type: :struct, struct: Example.User
-  @parameter argument: :id, type: :integer
+  @argument name: :user, type: :struct, struct: Example.User
+  @argument name: :id, type: :integer
   @authorize policy: &Example.auth?/2
   def delete_user(user, id) do
     # Some logic

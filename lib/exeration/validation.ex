@@ -1,14 +1,14 @@
 defmodule Exeration.Validation do
-  alias Exeration.Operation.Parameter
+  alias Exeration.Operation.Argument
 
-  def check([%Parameter{argument: argument, type: type} = parameter | parameters], arguments) do
-    value = Keyword.get(arguments, parameter.argument)
+  def check([%Argument{name: name, type: type} = argument | arguments], function_arguments) do
+    value = Keyword.get(function_arguments, name)
 
-    with :ok <- check_required(parameter, value),
-         :ok <- check_type(parameter, value) do
-      check(parameters, arguments)
+    with :ok <- check_required(argument, value),
+         :ok <- check_type(argument, value) do
+      check(arguments, function_arguments)
     else
-      :error -> {:error, argument, type}
+      :error -> {:error, name, type}
     end
   end
 
@@ -16,93 +16,93 @@ defmodule Exeration.Validation do
     {:ok, :validation}
   end
 
-  defp check_required(%Parameter{required: true}, value) do
+  defp check_required(%Argument{required: true}, value) do
     case not is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_required(%Parameter{required: false}, _) do
+  defp check_required(%Argument{required: false}, _) do
     :ok
   end
 
-  defp check_type(%Parameter{type: :boolean}, value) do
+  defp check_type(%Argument{type: :boolean}, value) do
     case is_boolean(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :integer}, value) do
+  defp check_type(%Argument{type: :integer}, value) do
     case is_integer(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :float}, value) do
+  defp check_type(%Argument{type: :float}, value) do
     case is_float(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :string}, value) do
+  defp check_type(%Argument{type: :string}, value) do
     case is_binary(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :tuple}, value) do
+  defp check_type(%Argument{type: :tuple}, value) do
     case is_tuple(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :map}, value) do
+  defp check_type(%Argument{type: :map}, value) do
     case is_map(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :struct} = parameter, value) do
-    case (is_map(value) and is_struct(value) and value.__struct__ == parameter.struct) or
+  defp check_type(%Argument{type: :struct} = argument, value) do
+    case (is_map(value) and is_struct(value) and value.__struct__ == argument.struct) or
            is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :list}, value) do
+  defp check_type(%Argument{type: :list}, value) do
     case is_list(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :atom}, value) do
+  defp check_type(%Argument{type: :atom}, value) do
     case is_atom(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :function}, value) do
+  defp check_type(%Argument{type: :function}, value) do
     case is_function(value) or is_nil(value) do
       true -> :ok
       false -> :error
     end
   end
 
-  defp check_type(%Parameter{type: :dont_check}, _) do
+  defp check_type(%Argument{type: :dont_check}, _) do
     :ok
   end
 
-  defp check_type(%Parameter{type: custom} = parameter, value) do
+  defp check_type(%Argument{type: custom} = argument, value) do
     Application.fetch_env!(:exeration, :custom_validators)
     |> Keyword.get(custom, nil)
     |> case do
@@ -111,7 +111,7 @@ defmodule Exeration.Validation do
           message: "Custom validator '#{custom}' not presented in config"
 
       module ->
-        Kernel.apply(module, :check, [parameter, value])
+        Kernel.apply(module, :check, [argument, value])
     end
     |> case do
       :ok ->
