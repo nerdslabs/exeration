@@ -70,7 +70,7 @@ defmodule Exeration.Validation do
   end
 
   defp check_type(%Argument{type: :struct} = argument, value) do
-    case (is_map(value) and is_struct(value) and value.__struct__ == argument.struct) or
+    case (is_map(value) and map_is_struct(value) and value.__struct__ == argument.struct) or
            is_nil(value) do
       true -> :ok
       false -> :error
@@ -126,6 +126,6 @@ defmodule Exeration.Validation do
     end
   end
 
-  defp is_struct(%{__struct__: _} = item) when is_map(item), do: true
-  defp is_struct(_), do: false
+  defp map_is_struct(%{__struct__: _} = item) when is_map(item), do: true
+  defp map_is_struct(_), do: false
 end
